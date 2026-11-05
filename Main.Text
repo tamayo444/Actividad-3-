@@ -1,0 +1,99 @@
+Fragmento de código
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\geometry{margin=2.4cm}
+
+\title{\textbf{Test 1 - Unidad 3: Análisis de Desplazamientos y Condiciones de Borde en Barra Axial mediante MEF}}
+\author{Joaquín Tamayo}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Introducción y Planteamiento del Problema}
+Se analiza una barra axial elástica uniforme de longitud $L = 2000\text{ mm}$, módulo de elasticidad $E = 200000\text{ N/mm}^2$ y sección transversal $A = 1000\text{ mm}^2$, sometida a una carga axial uniforme $q = 10\text{ N/mm}$ y una carga puntual $P = 20000\text{ N}$ en su extremo libre.
+
+La solución analítica continua de referencia $u(x)$, obtenida a partir de la integración de $-(EA u')' = q$ con las condiciones de contorno $u(0)=0$ y $EA u'(L)=P$, es:
+\begin{equation}
+u(x) = \frac{1}{EA} \left( (P + qL)x - \frac{q x^2}{2} \right)
+\end{equation}
+
+\section{Predicciones Previas a la Ejecución}
+\begin{enumerate}
+    \item \textbf{Acuerdo Nodal:} Para elementos finitos lineales de 2 nodos bajo carga uniforme $q$, el desplazamiento en los nodos es exacto ($u(L) = 0.3000\text{ mm}$) independientemente del número de elementos $n$.
+    \item \textbf{Error Intracelular:} El error absoluto máximo en los puntos medios disminuye cuadráticamente $\mathcal{O}(h^2)$ al refinar la malla de 2 a 8 elementos.
+    \item \textbf{Restricción Adicional:} La condición $u(L)=0$ modifica físicamente el sistema de isostático a hiperestático.
+\end{enumerate}
+
+\section{Respuestas Explicadas del Cuestionario (P1 a P8)}
+\begin{description}
+    \item[P1 ($u_{ref}(L)$):] \textbf{0.3 mm}. Calculado mediante la ecuación exacta en $x=L$.
+    \item[P2 ($u_{MEF}(L), n=2$):] \textbf{0.3 mm}. Demuestra el acuerdo nodal del MEF para elementos lineales.
+    \item[P3 (Error $n=2$):] \textbf{0.00625 mm}. Diferencia absoluta máxima evaluada en puntos medios.
+    \item[P4 (Error $n=8$):] \textbf{0.000390625 mm}. Reducción cuadrática del error intracelular con $h=250\text{ mm}$.
+    \item[P5 ($R_0$ base):] \textbf{-40000 N}. Reacción de apoyo en $x=0$ dada por $R_0 = -(P + qL)$.
+    \item[P6 (Tolerancia):] Control de convergencia numérica del sistema $K \cdot u = f$, no validación física.
+    \item[P7 ($R_L$ restringido):] \textbf{-10000 N}. Nueva reacción en $x=L$ al imponer $u(L)=0$.
+    \item[P8 (Cierre de equilibrio):] El ensamblaje matricial satisface el equilibrio algebraico aun alterando el problema físico de contorno.
+\end{description}
+
+\section{Resultados Numéricos y Convergencia}
+
+\begin{table}[h]
+\centering
+\caption{Resultados MEF para las distintas mallas evaluadas.}
+\small
+\begin{tabular}{ccccc}
+\toprule
+$n$ & $u(L)$ [mm] & $R_0$ [N] & Residuos Nodales & Error Máx. P. Medios [mm] \\
+\midrule
+2 & 0.3000 & -40000.0 & $< 10^{-8}$ & $0.00625000$ \\
+4 & 0.3000 & -40000.0 & $< 10^{-8}$ & $0.00156250$ \\
+8 & 0.3000 & -40000.0 & $< 10^{-8}$ & $0.00039063$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{semilogyaxis}[
+    title={\textbf{Convergencia del Error en Puntos Medios}},
+    xlabel={Número de elementos ($n$)},
+    ylabel={Error absoluto máximo [mm]},
+    xmin=1, xmax=9,
+    xtick={2,4,8},
+    grid=both,
+    grid style={dashed,gray!30},
+    width=0.7\textwidth,
+    height=5.2cm
+]
+\addplot[
+    color=blue!70!black,
+    mark=*,
+    thick,
+    mark size=2.5pt
+]
+coordinates {
+    (2, 0.00625)
+    (4, 0.0015625)
+    (8, 0.000390625)
+};
+\end{semilogyaxis}
+\end{tikzpicture}
+\caption{Disminución cuadrática del error en puntos medios frente al número de elementos $n$.}
+\end{figure}
+
+\section{Diagnóstico de Cambio de Contorno y Conclusión Causal}
+Al aplicar $u(L)=0$ en la malla de 8 elementos, $u(L)$ se anula y las reacciones se redistribuyen ($R_0 = -30000\text{ N}$, $R_L = -10000\text{ N}$). El equilibrio global $R_0 + R_L + P + qL = 0$ cierra algebraicamente porque las matemáticas de la matriz global $K$ siguen respondiendo al ensamblaje nodal; sin embargo, el modelo alterado transforma la barra de isostática a hiperestática, desvirtuando el problema físico original.
+
+En conclusión, el MEF garantiza acuerdo nodal exacto para cargas uniformes con elementos lineales, reduciendo el error entre nodos al refinar la malla. La imposición de restricciones adicionales altera la física del problema de borde, manteniendo el equilibrio numérico pero invalidando la representación del modelo original.
+
+\end{document}
